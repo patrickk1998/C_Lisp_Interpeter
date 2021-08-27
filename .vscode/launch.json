@@ -16,7 +16,8 @@
             "cwd": "${fileDirname}",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "lldb"
+            "MIMode": "lldb",
+             "targetArchitecture": "arm"
         },
         
         {

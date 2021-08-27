@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-
 // for structs, returning pointer or no?
 
 // you can still enter into the command line while the 
@@ -15,6 +14,12 @@
 // when c crashes, does it go into a infnite loop?
 
 // array of pointers
+
+//cases are weird! 
+
+// no str args, just args, so int.
+
+// I really enjoy debugging!!!!
 
 // print %d the null pointer!
 
@@ -33,20 +38,29 @@ enum ctype{expression,num,operand,none};
 
 str vops ="+-*/";
 
-struct expression;
+struct children;
+
+typedef struct expression{
+    struct children* kids;
+    int nkids;
+} expr;
 
 typedef struct children{
     enum ctype type;
-    struct expression* ec;
+    struct expression ec;
     double nc;
     op oc;
 
 } child;
 
-typedef struct expression{
-    child* kids;
-} expr;
+typedef struct passInHolder{
+    double* list;
+    int size;
+} passHold;
 
+expr lex(str instr);
+
+double apply(str oc, passHold args);
 /*
     str readIn()
     -- reads in lines of input, of arbitrary length, and returns it when return 
@@ -158,14 +172,11 @@ bool vchar(char c, str vc){
 str* realb(char* buff, str* dest, int bl, int dl){
     str s = malloc((bl + 2) * sizeof(char));
     str* newdest = realloc(dest,(dl + 1) * sizeof(str));
-    printf("size of dl %d \n",dl);
     for(int i = 0; i < bl;i++){
         s[i] = buff[i];
     }
     s[bl] = '\0';
     newdest[dl] = s;
-    printf(" %d",dl);
-    printf("dest[dl]\n");
     return(newdest);
 }
 
@@ -181,10 +192,8 @@ str extractx(str instr){
     int pdepth = 0;
     bool in = false;
     do{   
-        printf("Hello! ");
         ii++;
         char c = instr[ii];   
-        printf("%c \n", c);  
         if(c == ')'){
             pdepth--;
         }
@@ -192,9 +201,7 @@ str extractx(str instr){
             break;
         }
         if(in){
-            printf("bi: %d \n",bi );
             buff[bi] = c;
-            printf("buff[bi]: %c \n",buff[bi]);
             bi++;
         }
         if(c =='('){
@@ -203,7 +210,6 @@ str extractx(str instr){
         } 
     }while(instr[ii] != '\0');
     buff[bi] = '\0'; 
-    printf("buff: %s", buff);
     return(buff);  
 }
 
@@ -225,14 +231,13 @@ str* eargs(str istr){
     int i = 0;
     bool af = false;
     char c;
-    printf(istr);
     istr = extractx(istr);
-    printf(istr);
     int pdepth = 0;
     while(1){
         c = istr[i];
         if(c == '\0'){
             args = realb(buff,args,bi,ai);
+            ai++;
             break;
         }
         if(c == '('){
@@ -261,6 +266,8 @@ str* eargs(str istr){
         }
         i++;
     }  
+    args[ai] = NULL;
+    free(istr);
     return(args);
 }
 
@@ -306,7 +313,7 @@ bool chexpr(str arg){
         l++;
     }
     if(arg[0] == '('){
-        if(arg[l] == ')'){
+        if(arg[l-1] == ')'){
             return(true);
         }
     }
@@ -335,7 +342,9 @@ enum ctype chkct(str arg){
 child atcn(str arg){
     child k;
     k.type = num;
-    k.nc = strtod(arg, NULL);
+    double a;
+    a = strtod(arg, NULL);
+    k.nc = a;
     return(k);
 }
 
@@ -346,7 +355,14 @@ child atcop(str arg){
     return(k);
 }
 
-child atc(str arg){
+child atcexpr(str arg){
+    child rc;
+    rc.type = expression;
+    rc.ec = lex(arg);
+    return(rc);
+}
+
+child atc(str arg,int ii,int i){
     child r;
     r.type = none; 
     switch(chkct(arg)){
@@ -354,78 +370,88 @@ child atc(str arg){
             return(atcn(arg));
         case operand:
             return(atcop(arg));
+        case expression:
+            printf("\n Child is Expression!");
+            return(atcexpr(arg));
     }
     return(r);
-}
-
-str* test(){
-    str* rt = malloc(4 * sizeof(str*));
-    rt[0] = "+";
-    rt[1] = "1";
-    rt[2] = "1";
-    rt[3] = NULL;
-    return(rt);
 }
 
 //do not use input, use istr instead.
 expr lex(str istr){
     str *args = eargs(istr);
     //str* args = test();
-    printf("returned!");
     child* kids;
+    int nkids = 0;
     int kl = 0;
     int i = 0;
-    while(args[i] != NULL){
-        printf("a");
+    str t;
+    while(args[i] != NULL){    
+        t = args[i];
         i++;
     }
     kids = malloc((i + 1) * sizeof(child));
     int l = i + 1;
-    printf(" %d ",i);
     for(int ii = 0; ii < i;ii++){
-       printf("%d",ii);
-       kids[ii] = atc(args[ii]);
-       printf(" \n type: %d ",kids[ii].type);
+       kids[ii] = atc(args[ii],ii,i);
     }
     expr rt;
     rt.kids = kids;
+    rt.nkids = i;
     return(rt);
 }
 
 /* Computation section */
 
-double add(double a, double b){
-    return(a+b);
+double add(passHold args){
+    double s = 0;
+    double a;
+    for(int i = 0; i < args.size;i++){
+        a = args.list[i];
+        s = s + args.list[i];
+    }
+    return(s);
 }
 
-double multi(double a, double b){   
-    return(a*b);
+double multi(passHold args){   
+   double s = 1;
+    for(int i = 0; i < args.size;i++){
+        s = s * args.list[i];
+    } 
+    return(s);
 }
 
-double apply(expr rt){
-    double ina = rt.kids[1].nc;
-    double inb = rt.kids[2].nc;
-    printf("da: %f",ina);
-    printf("db: %f",inb);
-    op oc = rt.kids[0].oc; 
+double eval(expr rt){
+    str oc = rt.kids[0].oc;
+    passHold passIn;
+    passIn.list = malloc((rt.nkids - 1) * sizeof(double));
+    passIn.size = rt.nkids - 1;
+    child a;
+    for(int i = 1; i < rt.nkids;i++){
+        a = rt.kids[i];
+        if(a.type == num){
+            passIn.list[i-1] = rt.kids[i].nc; 
+        }
+        if(a.type == expression){
+            passIn.list[i-1] = eval(rt.kids[i].ec);
+        }
+    }
+    double t = apply(oc, passIn);
+    return(t);
+}
+
+double apply(str oc, passHold args){
     if(streq(oc,"+")){
-        printf("+");
-        return(add(ina,inb));
+        return(add(args));
     }
     if(streq(oc,"*")){
-        return(multi(ina,inb));
+        return(multi(args));
     } 
 }
 
-//Booleans in c?
-
 int main(){
     str line;
-    //line = readIn();
-    line = "(+ 3 1)"; 
-    //printf("you entered \n %s \n",line);
-    //printf("Hello");
+    line = readIn();
     expr rt = lex(line);
-    printf("\n %d \n",rt.kids[0].type);
-    printf("\n result %f", apply(rt));
+    printf("\n result %f", eval(rt));
 }
