@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 
 // for structs, returning pointer or no?
 
@@ -29,14 +30,18 @@
 // arrraying a pointer is the same as incrementing it and 
 // setting its value.
 
+// char[][] string array and str* array not the same thing!
+
+// When debuggin remember that the dubbuger may turn off
+// Adress Space Layout Randomization (ASLR)
+// settings set target.disable-aslr false
+
 typedef char* str;
 typedef char* op;
 
 // Enum of diffrent types of children. 
 
 enum ctype{expression,num,operand,none};
-
-str vops ="+-*/";
 
 struct children;
 
@@ -58,7 +63,35 @@ typedef struct passInHolder{
     int size;
 } passHold;
 
+str* vops;
+
 expr lex(str instr);
+
+str str_malloc(str s){
+    int i = 0;
+    while(1){
+        if(s[i] == '\0'){
+            break;
+        }
+        i++;
+    }
+    str rt = malloc((i+1) * sizeof(char));
+    i = -1;
+    do{
+        i++;
+        rt[i] = s[i];
+    }while(s[i] != '\0');
+    return(rt);
+}
+
+str* get_vops(){
+    str* o = malloc(4 * sizeof(str));
+    o[0] = str_malloc("+");
+    o[1] = str_malloc("*");
+    o[2] = str_malloc("sqrt");
+    o[3] = NULL;
+    return(o);
+}
 
 double apply(str oc, passHold args);
 /*
@@ -118,6 +151,15 @@ bool streq(str a, str b){
     return(true);
 }
 
+void free_strlist(str* list){
+    int i = 0;
+    while(list[i] != NULL){
+        free(list[i]);
+        i++;
+    }
+    free(list);
+}
+
 /*
     str stripnl(str abc)
     -- removes all '\n' characters in a string.
@@ -164,19 +206,35 @@ bool vchar(char c, str vc){
 }
 
 /*
+    vstr(str s, str* vc)
+    -- given a string s and a 2D char (string) array that ends with 
+    NULL vc, checks if s is in vc. 
+*/
+
+bool vstr(str s, str* vc){
+    int i = 0;
+    str a;
+    while(vc[i] != NULL){
+        a = vc[i];
+        if(streq(s,vc[i])){
+            return(true);
+        }
+        i++;
+    }
+    
+    return(false);
+}    
+
+/*
     realb(char* buff, str* dest, int bl, int dl)
     -- bufffer for daynamic arrays. Have to manually set 
     bl and dl 
 */
 
 str* realb(char* buff, str* dest, int bl, int dl){
-    str s = malloc((bl + 2) * sizeof(char));
     str* newdest = realloc(dest,(dl + 1) * sizeof(str));
-    for(int i = 0; i < bl;i++){
-        s[i] = buff[i];
-    }
-    s[bl] = '\0';
-    newdest[dl] = s;
+    buff[bl] = '\0';
+    newdest[dl] = str_malloc(buff);
     return(newdest);
 }
 
@@ -267,11 +325,13 @@ str* eargs(str istr){
         i++;
     }  
     args[ai] = NULL;
-    free(istr);
+    //free(istr) <-- makes all the differnce!
+    //freeing stack memory (from lex) 
+    //messes up the memory in in lex 
+    //something to do with aslr?
+    printf("ai: %d \n",ai);
     return(args);
 }
-
-// **** problem is in these to next functions!. ****
 
 /*
     chop(str arg)
@@ -280,7 +340,7 @@ str* eargs(str istr){
 */ 
 
 bool chop(str arg){
-    return(vchar(arg[0], vops));
+    return(vstr(arg,vops));
 }
 
 /*
@@ -371,23 +431,28 @@ child atc(str arg,int ii,int i){
         case operand:
             return(atcop(arg));
         case expression:
-            printf("\n Child is Expression!");
             return(atcexpr(arg));
     }
     return(r);
 }
 
+str* test(){
+    str* rt = malloc(3 * sizeof(str));
+    rt[0] = str_malloc("sqrt");
+    rt[1] = str_malloc("100");
+    rt[3] = NULL;
+    return(rt);
+}
+
 //do not use input, use istr instead.
 expr lex(str istr){
     str *args = eargs(istr);
-    //str* args = test();
+    //str* args = test(); // pointer [2] not a null pointer?
     child* kids;
     int nkids = 0;
     int kl = 0;
     int i = 0;
-    str t;
     while(args[i] != NULL){    
-        t = args[i];
         i++;
     }
     kids = malloc((i + 1) * sizeof(child));
@@ -421,6 +486,17 @@ double multi(passHold args){
     return(s);
 }
 
+/*
+    default behavior for the squareroot function when 
+    passed in multiple inputs is the multiply them first,
+    taking the output of the result
+*/
+
+double squareroot(passHold args){
+    double s = multi(args);
+    return(sqrt(s));
+}
+
 double eval(expr rt){
     str oc = rt.kids[0].oc;
     passHold passIn;
@@ -447,11 +523,16 @@ double apply(str oc, passHold args){
     if(streq(oc,"*")){
         return(multi(args));
     } 
+    if(streq(oc,"sqrt")){
+        return(squareroot(args));
+    }
 }
 
 int main(){
+    vops = get_vops();
     str line;
     line = readIn();
+    //line = "(sqrt 100)";
     expr rt = lex(line);
-    printf("\n result %f", eval(rt));
+    printf("\n < %f \n",eval(rt));
 }
