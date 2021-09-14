@@ -65,6 +65,8 @@ typedef struct passInHolder{
 
 str* vops;
 
+bool toquit = false;
+
 expr lex(str instr);
 
 str str_malloc(str s){
@@ -85,11 +87,12 @@ str str_malloc(str s){
 }
 
 str* get_vops(){
-    str* o = malloc(4 * sizeof(str));
+    str* o = malloc(5 * sizeof(str));
     o[0] = str_malloc("+");
     o[1] = str_malloc("*");
     o[2] = str_malloc("sqrt");
-    o[3] = NULL;
+    o[3] = str_malloc("quit");
+    o[4] = NULL;
     return(o);
 }
 
@@ -128,7 +131,6 @@ str readIn(){
             break;
         }
     }
-    printf("Done ReadIN");
     line[l-2] = '\0';
     return(line);
 }
@@ -329,7 +331,6 @@ str* eargs(str istr){
     //freeing stack memory (from lex) 
     //messes up the memory in in lex 
     //something to do with aslr?
-    printf("ai: %d \n",ai);
     return(args);
 }
 
@@ -478,6 +479,20 @@ double add(passHold args){
     return(s);
 }
 
+double subtract(passHold args){
+    double s = args.list[0];
+    double a;
+    for(int i = 1; i < args.size;i++){
+        a = args.list[i];
+        s = s - args.list[i];
+    }
+    return(s); 
+}
+
+double divide(passHold args){
+    
+}
+
 double multi(passHold args){   
    double s = 1;
     for(int i = 0; i < args.size;i++){
@@ -495,6 +510,11 @@ double multi(passHold args){
 double squareroot(passHold args){
     double s = multi(args);
     return(sqrt(s));
+}
+
+double quit(passHold args){
+    toquit = true;
+    return(0);
 }
 
 double eval(expr rt){
@@ -526,13 +546,22 @@ double apply(str oc, passHold args){
     if(streq(oc,"sqrt")){
         return(squareroot(args));
     }
+    if(streq(oc,"quit")){
+        return(quit(args));
+    }
 }
 
 int main(){
     vops = get_vops();
     str line;
-    line = readIn();
-    //line = "(sqrt 100)";
-    expr rt = lex(line);
-    printf("\n < %f \n",eval(rt));
+    while(1){
+        printf(">" );
+        line = readIn();
+        expr rt = lex(line);
+        double line_eval = eval(rt);
+        if(toquit){
+            break;
+        }
+        printf("\n< %f \n", line_eval);
+    }
 }
