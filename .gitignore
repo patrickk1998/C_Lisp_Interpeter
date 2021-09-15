@@ -52,6 +52,7 @@ helloworld.c
 
 # Debug files
 *.dSYM/
+*.out.dSYM/
 *.su
 *.idb
 *.pdb
