@@ -2,42 +2,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
+#include "gutil.h"
 
-// for structs, returning pointer or no?
-
-// you can still enter into the command line while the 
-// program is running in a loop! So if you are stuck 
-// with a funcitoning command line, there is an infinite loop 
-// somewhere.
-
-// name space issues? especially with enums
-
-// when c crashes, does it go into a infnite loop?
-
-// array of pointers
-
-//cases are weird! 
-
-// no str args, just args, so int.
-
-// I really enjoy debugging!!!!
-
-// print %d the null pointer!
-
-// multple failure problem. (also check if every while loop is 
-// not infinite)
-
-// arrraying a pointer is the same as incrementing it and 
-// setting its value.
-
-// char[][] string array and str* array not the same thing!
-
-// When debuggin remember that the dubbuger may turn off
-// Adress Space Layout Randomization (ASLR)
-// settings set target.disable-aslr false
-
-typedef char* str;
-typedef char* op;
 
 // Enum of diffrent types of children. 
 
@@ -69,22 +35,6 @@ bool toquit = false;
 
 expr lex(str instr);
 
-str str_malloc(str s){
-    int i = 0;
-    while(1){
-        if(s[i] == '\0'){
-            break;
-        }
-        i++;
-    }
-    str rt = malloc((i+1) * sizeof(char));
-    i = -1;
-    do{
-        i++;
-        rt[i] = s[i];
-    }while(s[i] != '\0');
-    return(rt);
-}
 
 str* get_vops(){
     str* o = malloc(5 * sizeof(str));
@@ -135,97 +85,6 @@ str readIn(){
     return(line);
 }
 
-/*
-    streq(str a, strb)
-    -- checks if two strings are equall and returns true or false.
-    Wrote this because I do not like the strcmp function in 
-    in string.h (returns 0 for true!).
-*/
-
-bool streq(str a, str b){
-    int i = -1;
-    do{
-        i++;
-        if(a[i] != b[i]){
-            return(false);
-        }
-    }while(a[i] != '\0');
-    return(true);
-}
-
-void free_strlist(str* list){
-    int i = 0;
-    while(list[i] != NULL){
-        free(list[i]);
-        i++;
-    }
-    free(list);
-}
-
-/*
-    str stripnl(str abc)
-    -- removes all '\n' characters in a string.
-*/
-
-str stripnl(str input){
-    str line = malloc(51 * sizeof(char));
-    int n = 0;
-    int s = 1;
-    int i = 0;
-    char c;
-    while( (c = input[i]) ){
-        if(c != '\n'){
-            line[n] = c;
-            n++;
-        }  
-        i++;    
-        if(n  == 49){
-            s++;
-            line = realloc(line,(s*50 + 1) * sizeof(char));
-            n = 0;
-        }
-        if(c == '\0'){
-            break;
-        }
-    }
-    return(line);
-}
-
-/*
-    bool vchar(char c, str vc)
-    -- checks if char c is in in the string vc. 
-*/
-
-bool vchar(char c, str vc){
-    int i = 0;
-    while(vc[i] != '\0'){
-        if(c == vc[i]){
-            return(true);
-        }
-        i++;
-    }
-    return(false);
-}
-
-/*
-    vstr(str s, str* vc)
-    -- given a string s and a 2D char (string) array that ends with 
-    NULL vc, checks if s is in vc. 
-*/
-
-bool vstr(str s, str* vc){
-    int i = 0;
-    str a;
-    while(vc[i] != NULL){
-        a = vc[i];
-        if(streq(s,vc[i])){
-            return(true);
-        }
-        i++;
-    }
-    
-    return(false);
-}    
 
 /*
     realb(char* buff, str* dest, int bl, int dl)

@@ -8,6 +8,8 @@ lldbTutorial/
 
 .vscode/
 
+multifile/
+
 helloworld.c
 
 # Prerequisites
@@ -67,3 +69,4 @@ dkms.conf
 #other 
 .DS_Store
 *.DS_Store
+localNotes.md 
