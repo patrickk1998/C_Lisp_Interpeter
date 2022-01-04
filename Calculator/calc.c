@@ -18,11 +18,17 @@ typedef struct expression{
 
 typedef struct children{
     enum ctype type;
-    struct expression ec;
+    void* value;
+    /*struct expression ec;
     double nc;
     op oc;
+    */
 
 } child;
+
+/*
+ This is passed in to the apply function, it hold the operands
+*/
 
 typedef struct passInHolder{
     double* list;
@@ -35,6 +41,9 @@ bool toquit = false;
 
 expr lex(str instr);
 
+/*
+List of valid operations 
+*/
 
 str* get_vops(){
     str* o = malloc(5 * sizeof(str));
@@ -101,7 +110,7 @@ str* realb(char* buff, str* dest, int bl, int dl){
 
 /*  
     str extractx(str instr)
-    --extracts first expression that if finds
+    --extracts first expression that it finds
 */
 
 str extractx(str instr){
@@ -140,6 +149,8 @@ str extractx(str instr){
 */
 
 // currently working on this!.
+// if there is only one operand, the first string in the 
+// return list is empty!
 
 str* eargs(str istr){
     str vc = "abcdefghigklmnopqrstuvwxynz1234567890.+-*/()";
@@ -264,21 +275,25 @@ child atcn(str arg){
     k.type = num;
     double a;
     a = strtod(arg, NULL);
-    k.nc = a;
+    double* temp = malloc(sizeof(double));
+    *temp = a;
+    k.value = temp;
     return(k);
 }
 
 child atcop(str arg){
     child k;
     k.type = operand;
-    k.oc = arg;
+    k.value = arg;
     return(k);
 }
 
 child atcexpr(str arg){
     child rc;
     rc.type = expression;
-    rc.ec = lex(arg);
+    expr* temp = malloc(sizeof(expr));
+    *temp = lex(arg);
+    rc.value = temp;
     return(rc);
 }
 
@@ -339,7 +354,7 @@ double add(passHold args){
 }
 
 double subtract(passHold args){
-    double s = args.list[0];
+    double s = (double) args.list[0];
     double a;
     for(int i = 1; i < args.size;i++){
         a = args.list[i];
@@ -366,9 +381,12 @@ double multi(passHold args){
     taking the output of the result
 */
 
-double squareroot(passHold args){
-    double s = multi(args);
-    return(sqrt(s));
+//something is wrong here
+double sq(passHold args){
+    //double s = args.list[0];
+    double s = 100;
+    //printf("sqrt %f",s);
+    return(s);
 }
 
 double quit(passHold args){
@@ -377,7 +395,7 @@ double quit(passHold args){
 }
 
 double eval(expr rt){
-    str oc = rt.kids[0].oc;
+    str oc = rt.kids[0].value;
     passHold passIn;
     passIn.list = malloc((rt.nkids - 1) * sizeof(double));
     passIn.size = rt.nkids - 1;
@@ -385,10 +403,10 @@ double eval(expr rt){
     for(int i = 1; i < rt.nkids;i++){
         a = rt.kids[i];
         if(a.type == num){
-            passIn.list[i-1] = rt.kids[i].nc; 
+            passIn.list[i-1] = *(double*)rt.kids[i].value;
         }
         if(a.type == expression){
-            passIn.list[i-1] = eval(rt.kids[i].ec);
+            passIn.list[i-1] = eval(*(expr*)rt.kids[i].value);
         }
     }
     double t = apply(oc, passIn);
@@ -396,15 +414,21 @@ double eval(expr rt){
 }
 
 double apply(str oc, passHold args){
+
     if(streq(oc,"+")){
         return(add(args));
     }
+
     if(streq(oc,"*")){
+        printf("* called");
         return(multi(args));
-    } 
-    if(streq(oc,"sqrt")){
-        return(squareroot(args));
     }
+
+    if(streq(oc,"sqrt")){
+        printf("sqrt called");
+        return(sq(args));
+    }
+
     if(streq(oc,"quit")){
         return(quit(args));
     }
@@ -424,3 +448,5 @@ int main(){
         printf("\n< %f \n", line_eval);
     }
 }
+
+// some reason

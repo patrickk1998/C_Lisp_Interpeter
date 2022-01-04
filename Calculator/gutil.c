@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "gutil.h"
+#include <stdio.h>
 
 bool streq(str a, str b){
     int i = -1;
